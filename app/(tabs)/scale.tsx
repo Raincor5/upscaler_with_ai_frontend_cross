@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ScrollView, View, Text, TextInput, StyleSheet, ActivityIndicator } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-import { TouchableOpacity } from 'react-native-gesture-handler';
+import { Pressable } from 'react-native';
 import { Recipe } from '@/types/recipe';
 
 export default function RecipeScaler() {
@@ -33,14 +33,13 @@ export default function RecipeScaler() {
         setLoading(false);
       }
     };
-  
+
     fetchRecipes();
   }, []);
-  
 
   const scaleRecipe = async () => {
     if (!selectedRecipe) return alert('Please select a recipe.');
-  
+
     setLoading(true);
     const payload = {
       recipe: selectedRecipe,
@@ -50,18 +49,18 @@ export default function RecipeScaler() {
           ? { desiredPortion: scaleFactor }
           : { availableIngredientName: availability.ingredient, availableWeight: availability.weight },
     };
-  
+
     console.log('Scaling API Payload:', JSON.stringify(payload, null, 2)); // Debug payload
-  
+
     try {
       const response = await fetch('http://192.168.1.185:5000/api/scale', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-  
+
       if (!response.ok) throw new Error('Scaling failed.');
-  
+
       const data = await response.json();
       console.log('Scaling API Response:', JSON.stringify(data, null, 2)); // Debug API response
       setScaledIngredients(data.scaledIngredients || []);
@@ -71,7 +70,6 @@ export default function RecipeScaler() {
       setLoading(false);
     }
   };
-  
 
   const renderModeContent = () => {
     if (activeMode === 'portion') {
@@ -86,9 +84,9 @@ export default function RecipeScaler() {
               keyboardType="numeric"
               onChangeText={(text) => setScaleFactor(parseFloat(text))}
             />
-            <TouchableOpacity style={styles.primaryButton} onPress={scaleRecipe}>
+            <Pressable style={styles.primaryButton} onPress={scaleRecipe}>
               <Text style={styles.buttonText}>Scale Recipe</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
 
           {scaledIngredients.length > 0 &&
@@ -126,9 +124,9 @@ export default function RecipeScaler() {
               onChangeText={(text) => setAvailability((prev) => ({ ...prev, weight: parseFloat(text) }))}
             />
           </View>
-          <TouchableOpacity style={styles.primaryButton} onPress={scaleRecipe}>
+          <Pressable style={styles.primaryButton} onPress={scaleRecipe}>
             <Text style={styles.buttonText}>Scale Recipe</Text>
-          </TouchableOpacity>
+          </Pressable>
 
           {scaledIngredients.length > 0 &&
             scaledIngredients.map((ingredient, index) => (
@@ -152,20 +150,20 @@ export default function RecipeScaler() {
 
       {/* Segmented Control for Modes */}
       <View style={styles.segmentedControl}>
-        <TouchableOpacity
+        <Pressable
           style={[styles.segment, activeMode === 'portion' && styles.activeSegment]}
           onPress={() => setActiveMode('portion')}
         >
           <Text style={[styles.segmentText, activeMode === 'portion' && styles.activeSegmentText]}>Portion</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
+        </Pressable>
+        <Pressable
           style={[styles.segment, activeMode === 'availability' && styles.activeSegment]}
           onPress={() => setActiveMode('availability')}
         >
           <Text style={[styles.segmentText, activeMode === 'availability' && styles.activeSegmentText]}>
             Availability
           </Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       {/* Recipe Picker */}
@@ -195,7 +193,8 @@ export default function RecipeScaler() {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
+    padding: 0,
+    margin: 0,
     backgroundColor: '#121212',
     flexGrow: 1,
   },
@@ -208,15 +207,15 @@ const styles = StyleSheet.create({
   },
   segmentedControl: {
     flexDirection: 'row',
-    marginBottom: 20,
+    width: '100%',
     borderRadius: 10,
     backgroundColor: '#1e1e1e',
-    overflow: 'hidden',
   },
   segment: {
     flex: 1,
-    paddingVertical: 10,
+    justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: 15,
   },
   activeSegment: {
     backgroundColor: '#4CAF50',
