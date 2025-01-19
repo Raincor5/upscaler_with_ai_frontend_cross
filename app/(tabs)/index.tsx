@@ -1,152 +1,243 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput } from 'react-native';
-import fuzzysort from 'fuzzysort';
-import { Recipe } from '../../types/recipe';
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  RefreshControl,
+  Dimensions,
+  Alert,
+  ScrollView,
+} from 'react-native';
+import Swipeable from 'react-native-gesture-handler/Swipeable';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import DraggableFlatList from 'react-native-draggable-flatlist';
+import { Snackbar } from 'react-native-paper';
+import { TouchableOpacity } from 'react-native-gesture-handler';
+import { useNavigation } from '@react-navigation/native';
+import { Recipe } from '@/types/recipe';
+import { router } from 'expo-router';
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
 
 export default function RecipePreview() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [sortedRecipes, setSortedRecipes] = useState<Recipe[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+  const [deletedRecipe, setDeletedRecipe] = useState<Recipe | null>(null);
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const navigation = useNavigation();
 
   useEffect(() => {
-    const fetchRecipes = async () => {
-      try {
-        const response = await fetch('http://192.168.1.185:5000/api/recipes');
-        const data: Recipe[] = await response.json();
-        setRecipes(data);
-        setSortedRecipes(data); // Initialize filtered recipes
-      } catch (error) {
-        console.error('Error fetching recipes:', error);
-      }
-    };
-
     fetchRecipes();
   }, []);
 
-  // Update filtered recipes when the search query changes
-  useEffect(() => {
-    if (!searchQuery) {
-      setSortedRecipes(recipes); // Show all recipes when search is empty
+  const fetchRecipes = async () => {
+    try {
+      const response = await fetch('http://192.168.1.185:5000/api/recipes');
+      const data = await response.json();
+      setRecipes(data);
+    } catch (error) {
+      console.error('Error fetching recipes:', error);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    const recipeToDelete = recipes.find((r) => r._id === id);
+    if (!recipeToDelete) return;
+
+    setDeletedRecipe(recipeToDelete);
+    setRecipes((prev) => prev.filter((recipe) => recipe._id !== id));
+    setSnackbarVisible(true);
+
+    try {
+      const response = await fetch(
+        `http://192.168.1.185:5000/api/recipes/${id}`,
+        { method: 'DELETE' }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to delete recipe.');
+      }
+    } catch (error) {
+      console.error('Error deleting recipe:', error);
+    }
+  };
+
+  const handleUndo = async () => {
+    if (!deletedRecipe) return;
+
+    try {
+      const response = await fetch('http://192.168.1.185:5000/api/recipes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(deletedRecipe),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to restore recipe.');
+      }
+
+      setRecipes((prev) => [deletedRecipe, ...prev]);
+      setDeletedRecipe(null);
+    } catch (error) {
+      console.error('Error restoring recipe:', error);
+    }
+    setSnackbarVisible(false);
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchRecipes();
+    setRefreshing(false);
+  };
+
+  const handleRecipeClick = (recipe: Recipe | undefined | null) => {
+    // Log the recipe data for debugging
+    console.log('Selected Recipe:', recipe);
+    if (!recipe) {
+      Alert.alert('Error', 'Invalid recipe data.');
       return;
     }
 
-    // Sort recipes by relevance to the search query
-    const results = fuzzysort.go(searchQuery, recipes, { key: 'name' });
-    setSortedRecipes(results.map((result) => result.obj));
-  }, [searchQuery, recipes]);
+    router.push({
+      pathname: '/recipe-detail',
+      params: { recipe: JSON.stringify(recipe) }, // Ensure this matches RootStackParamList
+    });
+  };
+
+  const renderSwipeRight = () => (
+    <View style={[styles.swipeAction, styles.swipeRight]}>
+      <Text style={styles.swipeText}>Scale</Text>
+    </View>
+  );
+
+  const renderSwipeLeft = () => (
+    <View style={[styles.swipeAction, styles.swipeLeft]}>
+      <Text style={styles.swipeText}>Delete</Text>
+    </View>
+  );
+
+  const renderRecipe = ({ item, drag }: { item: Recipe; drag: () => void }) => (
+    <Swipeable
+      renderLeftActions={renderSwipeRight}
+      renderRightActions={renderSwipeLeft}
+      onSwipeableRightOpen={() => handleDelete(item._id)}
+      friction={2} // Reduce sensitivity
+      overshootLeft={false}
+      overshootRight={false}
+    >
+      <TouchableOpacity
+        onPress={() => handleRecipeClick(item)}
+        onLongPress={drag}
+        style={styles.recipeCard}
+      >
+        <Text style={styles.recipeName}>{item.name}</Text>
+        <Text style={styles.portion}>Portion: {item.originalPortion}</Text>
+      </TouchableOpacity>
+    </Swipeable>
+  );
 
   return (
-    <ScrollView style={styles.container}>
+    <GestureHandlerRootView style={styles.container}>
       <Text style={styles.title}>Recipe Preview</Text>
-      
-      {/* Search Input */}
-      <TextInput
-        style={styles.searchInput}
-        placeholder="Search by recipe name..."
-        placeholderTextColor="#aaaaaa"
-        value={searchQuery}
-        onChangeText={(text) => setSearchQuery(text)}
-      />
-
-      {/* Recipe Cards */}
-      {sortedRecipes.map((recipe, index) => (
-        <View key={index} style={styles.recipeCard}>
-          <Text style={styles.recipeName}>{recipe.name}</Text>
-          <Text style={styles.portion}>Portion: {recipe.originalPortion}</Text>
-
-          {recipe.ingredients && recipe.ingredients.length > 0 && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Ingredients:</Text>
-              {recipe.ingredients.map((ingredient, i) => (
-                <Text key={i} style={styles.text}>
-                  - {ingredient.name}: {ingredient.weight} {ingredient.unit}
-                </Text>
-              ))}
-            </View>
-          )}
-
-          {recipe.steps && recipe.steps.length > 0 && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Steps:</Text>
-              {recipe.steps.map((step, i) => (
-                <Text key={i} style={styles.text}>
-                  {i + 1}. {step}
-                </Text>
-              ))}
-            </View>
-          )}
-        </View>
-      ))}
-
-      {/* No Results Message */}
-      {sortedRecipes.length === 0 && (
-        <Text style={styles.noResults}>No recipes found.</Text>
-      )}
-    </ScrollView>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={{ paddingBottom: 100 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        {recipes.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No recipes available.</Text>
+            <Text style={styles.emptySubtext}>Pull down to refresh and load recipes.</Text>
+          </View>
+        ) : (
+          <DraggableFlatList
+            data={recipes}
+            keyExtractor={(item) => item._id}
+            onDragEnd={({ data }) => setRecipes(data)}
+            renderItem={renderRecipe}
+          />
+        )}
+      </ScrollView>
+      <Snackbar
+        visible={snackbarVisible}
+        onDismiss={() => setSnackbarVisible(false)}
+        action={{
+          label: 'Undo',
+          onPress: handleUndo,
+        }}
+      >
+        Recipe deleted.
+      </Snackbar>
+    </GestureHandlerRootView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
     backgroundColor: '#121212',
+    padding: 10,
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 20,
     color: '#ffffff',
     textAlign: 'center',
+    marginBottom: 10,
   },
-  searchInput: {
-    backgroundColor: '#1e1e1e',
-    color: '#ffffff',
-    padding: 10,
-    borderRadius: 10,
-    marginBottom: 20,
-    fontSize: 16,
+  scrollView: {
+    flex: 1,
   },
   recipeCard: {
-    marginBottom: 20,
-    padding: 15,
-    borderRadius: 15,
     backgroundColor: '#1e1e1e',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 15,
+    height: 100,
+    justifyContent: 'center',
   },
   recipeName: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 10,
     color: '#ffcc00',
   },
   portion: {
-    fontSize: 16,
-    marginBottom: 10,
-    color: '#cccccc',
-  },
-  section: {
-    marginTop: 10,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 5,
-    color: '#ffffff',
-  },
-  text: {
     fontSize: 14,
-    color: '#dddddd',
-    lineHeight: 22,
+    color: '#b0b0b0',
+    marginTop: 5,
   },
-  noResults: {
-    fontSize: 16,
-    color: '#cccccc',
+  swipeAction: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: SCREEN_WIDTH * 0.3,
+    height: 100, // Matches card height
+  },
+  swipeRight: {
+    backgroundColor: '#28a745',
+  },
+  swipeLeft: {
+    backgroundColor: '#dc3545',
+  },
+  swipeText: {
+    color: '#ffffff',
+    fontWeight: 'bold',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    marginBottom: 10,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: '#b0b0b0',
     textAlign: 'center',
-    marginTop: 20,
   },
 });

@@ -60,7 +60,7 @@ export default function TabLayout() {
             </Link>
           ),
         }}
-  />
+      />
     </Tabs>
       
 

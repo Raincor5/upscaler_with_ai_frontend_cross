@@ -69,7 +69,7 @@ export default function TabTwoScreen() {
       uri: photo,
       name: 'photo.jpg',
       type: 'image/jpeg',
-    } as any);
+    }as any);
 
     try {
       console.log('Uploading photo...');

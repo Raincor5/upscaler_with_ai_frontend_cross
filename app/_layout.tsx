@@ -2,11 +2,13 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
+import { RootStackParamList } from '@/types/types'; // Adjust the path to match your project structure
 import * as SplashScreen from 'expo-splash-screen';
 import * as Sentry from 'sentry-expo';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
-import { Alert } from 'react-native';
+import { Alert, StyleSheet } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { useColorScheme } from '@/components/useColorScheme';
 
@@ -22,7 +24,7 @@ export const unstable_settings = {
 
 // Initialize Sentry globally
 Sentry.init({
-  dsn: 'https://9491341ec3c87277c992482a806e696b@o4508668758523904.ingest.de.sentry.io/4508668763308112', // Replace with your DSN from Sentry
+  dsn: 'https://9491341ec3c87277c992482a806e696b@o4508668758523904.ingest.de.sentry.io/4508668763308112', // TODO: Move to secrets
   enableInExpoDevelopment: true, // Enable Sentry for development mode
   debug: true, // Enable debug information in the console
 });
@@ -41,8 +43,6 @@ ErrorUtils.setGlobalHandler((error, isFatal) => {
     );
   }
 });
-
-
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -72,7 +72,11 @@ export default function RootLayout() {
     return null;
   }
 
-  return <RootLayoutNav />;
+  return (
+    <GestureHandlerRootView style={styles.gestureHandlerRoot}>
+      <RootLayoutNav />
+    </GestureHandlerRootView>
+  );
 }
 
 function RootLayoutNav() {
@@ -83,7 +87,17 @@ function RootLayoutNav() {
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Help - Recipe Scaler' }} />
+        <Stack.Screen
+          name="recipe-detail"
+          options={{ title: 'Recipe Details' }}
+        />
       </Stack>
     </ThemeProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  gestureHandlerRoot: {
+    flex: 1,
+  },
+});

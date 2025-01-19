@@ -1,119 +1,280 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Button, StyleSheet } from 'react-native';
+import { ScrollView, View, Text, TextInput, StyleSheet, ActivityIndicator } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
+import { TouchableOpacity } from 'react-native-gesture-handler';
+import { Recipe } from '@/types/recipe';
 
 export default function RecipeScaler() {
-  const [recipes, setRecipes] = useState([]);
-  const [selectedRecipe, setSelectedRecipe] = useState(null);
-  const [scalingMode, setScalingMode] = useState('portion');
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [selectedRecipe, setSelectedRecipe] = useState<string | undefined>(undefined);
+  const [activeMode, setActiveMode] = useState<'portion' | 'availability'>('portion');
   const [scaleFactor, setScaleFactor] = useState(1);
   const [availability, setAvailability] = useState({ ingredient: '', weight: 0 });
-  const [scaledIngredients, setScaledIngredients] = useState([]);
+  const [scaledIngredients, setScaledIngredients] = useState<ScaledIngredient[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  type ScaledIngredient = {
+    name: string;
+    scaledWeight: number;
+    unit: string;
+  };
 
   useEffect(() => {
     const fetchRecipes = async () => {
+      setLoading(true);
       try {
         const response = await fetch('http://192.168.1.185:5000/api/recipes');
         const data = await response.json();
+        console.log('Fetched Recipes:', JSON.stringify(data, null, 2));
         setRecipes(data);
       } catch (error) {
         console.error('Error fetching recipes:', error);
+      } finally {
+        setLoading(false);
       }
     };
-
+  
     fetchRecipes();
   }, []);
+  
 
   const scaleRecipe = async () => {
     if (!selectedRecipe) return alert('Please select a recipe.');
-
+  
+    setLoading(true);
     const payload = {
       recipe: selectedRecipe,
-      scalingMode,
+      scalingMode: activeMode,
       parameter:
-        scalingMode === 'portion'
+        activeMode === 'portion'
           ? { desiredPortion: scaleFactor }
           : { availableIngredientName: availability.ingredient, availableWeight: availability.weight },
     };
-
+  
+    console.log('Scaling API Payload:', JSON.stringify(payload, null, 2)); // Debug payload
+  
     try {
-      const response = await fetch('http://<YOUR_IP>:5000/api/scale', {
+      const response = await fetch('http://192.168.1.185:5000/api/scale', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-
+  
       if (!response.ok) throw new Error('Scaling failed.');
+  
       const data = await response.json();
-      setScaledIngredients(data.scaledIngredients);
+      console.log('Scaling API Response:', JSON.stringify(data, null, 2)); // Debug API response
+      setScaledIngredients(data.scaledIngredients || []);
     } catch (error) {
       console.error('Error scaling recipe:', error);
+    } finally {
+      setLoading(false);
     }
+  };
+  
+
+  const renderModeContent = () => {
+    if (activeMode === 'portion') {
+      return (
+        <View>
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Scale Factor:</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter Scale Factor (e.g., 0.5, 2)"
+              placeholderTextColor="#777"
+              keyboardType="numeric"
+              onChangeText={(text) => setScaleFactor(parseFloat(text))}
+            />
+            <TouchableOpacity style={styles.primaryButton} onPress={scaleRecipe}>
+              <Text style={styles.buttonText}>Scale Recipe</Text>
+            </TouchableOpacity>
+          </View>
+
+          {scaledIngredients.length > 0 &&
+            scaledIngredients.map((ingredient, index) => (
+              <View key={index} style={styles.ingredientItem}>
+                <Text style={styles.ingredientText}>
+                  <Text style={styles.ingredientName}>{ingredient.name}</Text>: {ingredient.scaledWeight.toFixed(2)}{' '}
+                  {ingredient.unit}
+                </Text>
+              </View>
+            ))}
+        </View>
+      );
+    }
+
+    if (activeMode === 'availability') {
+      return (
+        <View>
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Ingredient Name:</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter Ingredient Name"
+              placeholderTextColor="#777"
+              onChangeText={(text) => setAvailability((prev) => ({ ...prev, ingredient: text }))}
+            />
+          </View>
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Available Weight (in grams):</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter Available Weight"
+              placeholderTextColor="#777"
+              keyboardType="numeric"
+              onChangeText={(text) => setAvailability((prev) => ({ ...prev, weight: parseFloat(text) }))}
+            />
+          </View>
+          <TouchableOpacity style={styles.primaryButton} onPress={scaleRecipe}>
+            <Text style={styles.buttonText}>Scale Recipe</Text>
+          </TouchableOpacity>
+
+          {scaledIngredients.length > 0 &&
+            scaledIngredients.map((ingredient, index) => (
+              <View key={index} style={styles.ingredientItem}>
+                <Text style={styles.ingredientText}>
+                  <Text style={styles.ingredientName}>{ingredient.name}</Text>: {ingredient.scaledWeight.toFixed(2)}{' '}
+                  {ingredient.unit}
+                </Text>
+              </View>
+            ))}
+        </View>
+      );
+    }
+
+    return null;
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Scale Recipes</Text>
-      <Picker
-        selectedValue={selectedRecipe}
-        onValueChange={(itemValue) => setSelectedRecipe(itemValue)}
-        style={styles.picker}
-      >
-        <Picker.Item label="Select a Recipe" value={null} />
-        {recipes.map((recipe) => (
-          <Picker.Item key={recipe._id} label={recipe.name} value={recipe} />
-        ))}
-      </Picker>
-      <Picker
-        selectedValue={scalingMode}
-        onValueChange={(itemValue) => setScalingMode(itemValue)}
-        style={styles.picker}
-      >
-        <Picker.Item label="Scale by Portion" value="portion" />
-        <Picker.Item label="Scale by Availability" value="availability" />
-      </Picker>
-      {scalingMode === 'portion' ? (
-        <TextInput
-          style={styles.input}
-          placeholder="Scale Factor (e.g., 0.5, 2)"
-          keyboardType="numeric"
-          onChangeText={(text) => setScaleFactor(parseFloat(text))}
-        />
-      ) : (
-        <>
-          <TextInput
-            style={styles.input}
-            placeholder="Ingredient Name"
-            onChangeText={(text) => setAvailability((prev) => ({ ...prev, ingredient: text }))}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Available Weight"
-            keyboardType="numeric"
-            onChangeText={(text) => setAvailability((prev) => ({ ...prev, weight: parseFloat(text) }))}
-          />
-        </>
-      )}
-      <Button title="Scale Recipe" onPress={scaleRecipe} />
-      {scaledIngredients.length > 0 && (
-        <View style={styles.result}>
-          <Text style={styles.subtitle}>Scaled Ingredients:</Text>
-          {scaledIngredients.map((ing, index) => (
-            <Text key={index}>
-              {ing.name}: {ing.scaledWeight} {ing.unit}
-            </Text>
-          ))}
-        </View>
-      )}
-    </View>
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.title}>Recipe Scaler</Text>
+
+      {/* Segmented Control for Modes */}
+      <View style={styles.segmentedControl}>
+        <TouchableOpacity
+          style={[styles.segment, activeMode === 'portion' && styles.activeSegment]}
+          onPress={() => setActiveMode('portion')}
+        >
+          <Text style={[styles.segmentText, activeMode === 'portion' && styles.activeSegmentText]}>Portion</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.segment, activeMode === 'availability' && styles.activeSegment]}
+          onPress={() => setActiveMode('availability')}
+        >
+          <Text style={[styles.segmentText, activeMode === 'availability' && styles.activeSegmentText]}>
+            Availability
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Recipe Picker */}
+      <View style={styles.pickerContainer}>
+        <Text style={styles.label}>Select a Recipe:</Text>
+        {loading ? (
+          <ActivityIndicator size="large" color="#4CAF50" />
+        ) : (
+          <Picker
+            selectedValue={selectedRecipe}
+            onValueChange={(itemValue) => setSelectedRecipe(itemValue)}
+            style={styles.picker}
+          >
+            <Picker.Item label="Select a Recipe" value={undefined} />
+            {recipes.map((recipe) => (
+              <Picker.Item key={recipe._id} label={recipe.name} value={recipe._id} />
+            ))}
+          </Picker>
+        )}
+      </View>
+
+      {/* Render Content Based on Mode */}
+      {renderModeContent()}
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 20 },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
-  picker: { height: 50, marginBottom: 20 },
-  input: { borderWidth: 1, padding: 10, marginBottom: 20, borderRadius: 5 },
-  result: { marginTop: 20 },
-  subtitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 10 },
+  container: {
+    padding: 20,
+    backgroundColor: '#121212',
+    flexGrow: 1,
+  },
+  title: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  segmentedControl: {
+    flexDirection: 'row',
+    marginBottom: 20,
+    borderRadius: 10,
+    backgroundColor: '#1e1e1e',
+    overflow: 'hidden',
+  },
+  segment: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  activeSegment: {
+    backgroundColor: '#4CAF50',
+  },
+  segmentText: {
+    color: '#777',
+    fontWeight: 'bold',
+  },
+  activeSegmentText: {
+    color: '#ffffff',
+  },
+  pickerContainer: {
+    marginBottom: 20,
+  },
+  picker: {
+    backgroundColor: '#1e1e1e',
+    color: '#ffffff',
+    borderRadius: 5,
+  },
+  label: {
+    fontSize: 16,
+    color: '#ffffff',
+    marginBottom: 10,
+  },
+  inputContainer: {
+    marginBottom: 20,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#444',
+    backgroundColor: '#1e1e1e',
+    color: '#ffffff',
+    padding: 10,
+    borderRadius: 5,
+  },
+  primaryButton: {
+    backgroundColor: '#4CAF50',
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderRadius: 5,
+    marginTop: 10,
+  },
+  buttonText: {
+    color: '#ffffff',
+    fontWeight: 'bold',
+  },
+  ingredientItem: {
+    backgroundColor: '#1e1e1e',
+    padding: 10,
+    marginBottom: 5,
+    borderRadius: 5,
+  },
+  ingredientText: {
+    fontSize: 16,
+    color: '#ffffff',
+  },
+  ingredientName: {
+    fontWeight: 'bold',
+    color: '#4CAF50',
+  },
 });
