@@ -27,10 +27,24 @@ export default function TabLayout() {
         headerShown: useClientOnlyValue(false, true),
       }}>
       <Tabs.Screen
-        name="index"
+          name="index"
+          options={{
+            title: 'Preview Recipes',
+            tabBarIcon: ({ color }) => <TabBarIcon name="list" color={color} />,
+          }}
+      />
+      <Tabs.Screen
+        name="two"
         options={{
-          title: 'Tab One',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
+          title: 'Upload Recipes',
+          tabBarIcon: ({ color }) => <TabBarIcon name="upload" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="scale"
+        options={{
+          title: 'Scale Recipes',
+          tabBarIcon: ({ color }) => <TabBarIcon name="balance-scale" color={color} />,
           headerRight: () => (
             <Link href="/modal" asChild>
               <Pressable>
@@ -46,14 +60,9 @@ export default function TabLayout() {
             </Link>
           ),
         }}
-      />
-      <Tabs.Screen
-        name="two"
-        options={{
-          title: 'Tab Two',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
-        }}
-      />
+  />
     </Tabs>
-  );
+      
+
+);
 }

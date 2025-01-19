@@ -3,8 +3,10 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import * as Sentry from 'sentry-expo';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
+import { Alert } from 'react-native';
 
 import { useColorScheme } from '@/components/useColorScheme';
 
@@ -18,6 +20,30 @@ export const unstable_settings = {
   initialRouteName: '(tabs)',
 };
 
+// Initialize Sentry globally
+Sentry.init({
+  dsn: 'https://9491341ec3c87277c992482a806e696b@o4508668758523904.ingest.de.sentry.io/4508668763308112', // Replace with your DSN from Sentry
+  enableInExpoDevelopment: true, // Enable Sentry for development mode
+  debug: true, // Enable debug information in the console
+});
+
+ErrorUtils.setGlobalHandler((error, isFatal) => {
+  console.error('Global Error:', error, isFatal); // Log for debugging
+
+  // Send the error to Sentry
+  Sentry.Native.captureException(error);
+
+  if (isFatal) {
+    Alert.alert(
+      'Critical Error',
+      'A critical error occurred. The app needs to restart.',
+      [{ text: 'OK' }]
+    );
+  }
+});
+
+
+
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
@@ -29,7 +55,11 @@ export default function RootLayout() {
 
   // Expo Router uses Error Boundaries to catch errors in the navigation tree.
   useEffect(() => {
-    if (error) throw error;
+    if (error) {
+      // Capture font loading errors in Sentry
+      Sentry.Native.captureException(error);
+      throw error;
+    }
   }, [error]);
 
   useEffect(() => {
@@ -52,7 +82,7 @@ function RootLayoutNav() {
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Help - Recipe Scaler' }} />
       </Stack>
     </ThemeProvider>
   );

@@ -8,6 +8,15 @@
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "extra": {
+      "sentryDsn": "https://9491341ec3c87277c992482a806e696b@o4508668758523904.ingest.de.sentry.io/4508668763308112",
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "44a9865a-db05-423e-a86c-6c4cfd00d94b"
+      }
+    },
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
@@ -28,7 +37,16 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "@sentry/react-native/expo",
+        {
+          "organization": "jaro-pq",
+          "project": "react-native",
+          "url": "https://sentry.io/"
+        }
+      ],
+      "sentry-expo"
     ],
     "experiments": {
       "typedRoutes": true
