@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ScrollView, View, Text, TextInput, StyleSheet, ActivityIndicator } from 'react-native';
+import { ScrollView, View, Text, TextInput, StyleSheet, ActivityIndicator, Pressable } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-import { Pressable } from 'react-native';
 import { useRecipeContext } from '@/context/RecipeContext';
 
 export default function RecipeScaler() {
@@ -9,7 +8,7 @@ export default function RecipeScaler() {
   const [selectedRecipe, setSelectedRecipe] = useState<string | undefined>(undefined);
   const [activeMode, setActiveMode] = useState<'portion' | 'availability'>('portion');
   const [scaleFactor, setScaleFactor] = useState(1);
-  const [availability, setAvailability] = useState({ ingredient: '', weight: 0 });
+  const [availability, setAvailability] = useState({ ingredient: '', weight: 0, unit: '' });
   const [scaledIngredients, setScaledIngredients] = useState<ScaledIngredient[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -25,6 +24,9 @@ export default function RecipeScaler() {
 
   const scaleRecipe = async () => {
     if (!selectedRecipe) return alert('Please select a recipe.');
+    if (activeMode === 'availability' && (!availability.ingredient || !availability.unit)) {
+      return alert('Please select an ingredient and a unit.');
+    }
 
     setLoading(true);
     const payload = {
@@ -33,10 +35,14 @@ export default function RecipeScaler() {
       parameter:
         activeMode === 'portion'
           ? { desiredPortion: scaleFactor }
-          : { availableIngredientName: availability.ingredient, availableWeight: availability.weight },
+          : {
+              availableIngredientName: availability.ingredient,
+              availableWeight: availability.weight,
+              availableUnit: availability.unit,
+            },
     };
 
-    console.log('Scaling API Payload:', JSON.stringify(payload, null, 2)); // Debug payload
+    console.log('Scaling API Payload:', JSON.stringify(payload, null, 2));
 
     try {
       const response = await fetch('http://192.168.1.185:5000/api/scale', {
@@ -48,7 +54,7 @@ export default function RecipeScaler() {
       if (!response.ok) throw new Error('Scaling failed.');
 
       const data = await response.json();
-      console.log('Scaling API Response:', JSON.stringify(data, null, 2)); // Debug API response
+      console.log('Scaling API Response:', JSON.stringify(data, null, 2));
       setScaledIngredients(data.scaledIngredients || []);
     } catch (error) {
       console.error('Error scaling recipe:', error);
@@ -74,55 +80,67 @@ export default function RecipeScaler() {
               <Text style={styles.buttonText}>Scale Recipe</Text>
             </Pressable>
           </View>
-
-          {scaledIngredients.length > 0 &&
-            scaledIngredients.map((ingredient, index) => (
-              <View key={index} style={styles.ingredientItem}>
-                <Text style={styles.ingredientText}>
-                  <Text style={styles.ingredientName}>{ingredient.name}</Text>: {ingredient.scaledWeight.toFixed(2)}{' '}
-                  {ingredient.unit}
-                </Text>
-              </View>
-            ))}
         </View>
       );
     }
 
     if (activeMode === 'availability') {
+      const selectedRecipeData = recipes.find((recipe) => recipe._id === selectedRecipe);
+      const ingredients = selectedRecipeData?.ingredients || [];
+
       return (
         <View>
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Ingredient Name:</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter Ingredient Name"
-              placeholderTextColor="#777"
-              onChangeText={(text) => setAvailability((prev) => ({ ...prev, ingredient: text }))}
-            />
+            <Picker
+              selectedValue={availability.ingredient}
+              onValueChange={(itemValue) =>
+                setAvailability((prev) => ({ ...prev, ingredient: itemValue }))
+              }
+              style={styles.picker}
+            >
+              <Picker.Item label="Select an Ingredient" value={undefined} />
+              {ingredients.map((ingredient, index) => (
+                <Picker.Item key={index} label={ingredient.name} value={ingredient.name} />
+              ))}
+            </Picker>
           </View>
+
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Available Weight (in grams):</Text>
+            <Text style={styles.label}>Available Weight:</Text>
             <TextInput
               style={styles.input}
               placeholder="Enter Available Weight"
               placeholderTextColor="#777"
               keyboardType="numeric"
-              onChangeText={(text) => setAvailability((prev) => ({ ...prev, weight: parseFloat(text) }))}
+              onChangeText={(text) =>
+                setAvailability((prev) => ({ ...prev, weight: parseFloat(text) }))
+              }
             />
           </View>
+
+          <View style={styles.unitContainer}>
+            <Text style={styles.label}>Unit:</Text>
+            <ScrollView horizontal contentContainerStyle={styles.unitScroll}>
+              {['grams', 'ml', 'pieces'].map((unit) => (
+                <Pressable
+                  key={unit}
+                  style={[styles.unitButton, availability.unit === unit && styles.unitButtonActive]}
+                  onPress={() => setAvailability((prev) => ({ ...prev, unit }))}
+                >
+                  <Text
+                    style={[styles.unitText, availability.unit === unit && styles.unitTextActive]}
+                  >
+                    {unit}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+
           <Pressable style={styles.primaryButton} onPress={scaleRecipe}>
             <Text style={styles.buttonText}>Scale Recipe</Text>
           </Pressable>
-
-          {scaledIngredients.length > 0 &&
-            scaledIngredients.map((ingredient, index) => (
-              <View key={index} style={styles.ingredientItem}>
-                <Text style={styles.ingredientText}>
-                  <Text style={styles.ingredientName}>{ingredient.name}</Text>: {ingredient.scaledWeight.toFixed(2)}{' '}
-                  {ingredient.unit}
-                </Text>
-              </View>
-            ))}
         </View>
       );
     }
@@ -130,11 +148,28 @@ export default function RecipeScaler() {
     return null;
   };
 
+  const renderScaledIngredients = () => {
+    if (scaledIngredients.length === 0) return null;
+
+    return (
+      <View style={styles.resultContainer}>
+        <Text style={styles.subtitle}>Scaled Ingredients:</Text>
+        {scaledIngredients.map((ingredient, index) => (
+          <View key={index} style={styles.ingredientItem}>
+            <Text style={styles.ingredientText}>
+              <Text style={styles.ingredientName}>{ingredient.name}</Text>: {ingredient.scaledWeight.toFixed(2)}{' '}
+              {ingredient.unit}
+            </Text>
+          </View>
+        ))}
+      </View>
+    );
+  };
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Recipe Scaler</Text>
 
-      {/* Segmented Control for Modes */}
       <View style={styles.segmentedControl}>
         <Pressable
           style={[styles.segment, activeMode === 'portion' && styles.activeSegment]}
@@ -152,7 +187,6 @@ export default function RecipeScaler() {
         </Pressable>
       </View>
 
-      {/* Recipe Picker */}
       <View style={styles.pickerContainer}>
         <Text style={styles.label}>Select a Recipe:</Text>
         {loading ? (
@@ -160,7 +194,10 @@ export default function RecipeScaler() {
         ) : (
           <Picker
             selectedValue={selectedRecipe}
-            onValueChange={(itemValue) => setSelectedRecipe(itemValue)}
+            onValueChange={(itemValue) => {
+              setSelectedRecipe(itemValue);
+              setAvailability({ ingredient: '', weight: 0, unit: '' });
+            }}
             style={styles.picker}
           >
             <Picker.Item label="Select a Recipe" value={undefined} />
@@ -171,92 +208,35 @@ export default function RecipeScaler() {
         )}
       </View>
 
-      {/* Render Content Based on Mode */}
       {renderModeContent()}
+      {renderScaledIngredients()}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 0,
-    margin: 0,
-    backgroundColor: '#121212',
-    flexGrow: 1,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: 'bold',
-    color: '#ffffff',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  segmentedControl: {
-    flexDirection: 'row',
-    width: '100%',
-    borderRadius: 10,
+  // Existing styles
+  resultContainer: {
+    marginTop: 20,
     backgroundColor: '#1e1e1e',
-  },
-  segment: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 15,
-  },
-  activeSegment: {
-    backgroundColor: '#4CAF50',
-  },
-  segmentText: {
-    color: '#777',
-    fontWeight: 'bold',
-  },
-  activeSegmentText: {
-    color: '#ffffff',
-  },
-  pickerContainer: {
-    marginBottom: 20,
-  },
-  picker: {
-    backgroundColor: '#1e1e1e',
-    color: '#ffffff',
+    padding: 15,
     borderRadius: 5,
   },
-  label: {
-    fontSize: 16,
+  subtitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
     color: '#ffffff',
     marginBottom: 10,
   },
-  inputContainer: {
-    marginBottom: 20,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#444',
-    backgroundColor: '#1e1e1e',
-    color: '#ffffff',
-    padding: 10,
-    borderRadius: 5,
-  },
-  primaryButton: {
-    backgroundColor: '#4CAF50',
-    paddingVertical: 12,
-    alignItems: 'center',
-    borderRadius: 5,
-    marginTop: 10,
-  },
-  buttonText: {
-    color: '#ffffff',
-    fontWeight: 'bold',
-  },
   ingredientItem: {
-    backgroundColor: '#1e1e1e',
     padding: 10,
     marginBottom: 5,
+    backgroundColor: '#2e2e2e',
     borderRadius: 5,
   },
   ingredientText: {
-    fontSize: 16,
     color: '#ffffff',
+    fontSize: 16,
   },
   ingredientName: {
     fontWeight: 'bold',
