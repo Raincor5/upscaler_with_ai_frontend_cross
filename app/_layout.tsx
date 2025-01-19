@@ -9,7 +9,7 @@ import { useEffect } from 'react';
 import 'react-native-reanimated';
 import { Alert, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-
+import { RecipeProvider } from '@/context/RecipeContext';
 import { useColorScheme } from '@/components/useColorScheme';
 
 export {
@@ -74,7 +74,9 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={styles.gestureHandlerRoot}>
-      <RootLayoutNav />
+      <RecipeProvider>
+        <RootLayoutNav />
+      </RecipeProvider>
     </GestureHandlerRootView>
   );
 }

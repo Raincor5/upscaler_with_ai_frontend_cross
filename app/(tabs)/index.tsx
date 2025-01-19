@@ -16,11 +16,12 @@ import { TouchableOpacity } from 'react-native-gesture-handler';
 import { useNavigation } from '@react-navigation/native';
 import { Recipe } from '@/types/recipe';
 import { router } from 'expo-router';
+import { useRecipeContext } from '@/context/RecipeContext';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
 export default function RecipePreview() {
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const { recipes, fetchRecipes, setRecipes } = useRecipeContext();
   const [refreshing, setRefreshing] = useState(false);
   const [deletedRecipe, setDeletedRecipe] = useState<Recipe | null>(null);
   const [snackbarVisible, setSnackbarVisible] = useState(false);
@@ -29,16 +30,6 @@ export default function RecipePreview() {
   useEffect(() => {
     fetchRecipes();
   }, []);
-
-  const fetchRecipes = async () => {
-    try {
-      const response = await fetch('http://192.168.1.185:5000/api/recipes');
-      const data = await response.json();
-      setRecipes(data);
-    } catch (error) {
-      console.error('Error fetching recipes:', error);
-    }
-  };
 
   const handleDelete = async (id: string) => {
     const recipeToDelete = recipes.find((r) => r._id === id);

@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { ScrollView, View, Text, TextInput, StyleSheet, ActivityIndicator } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { Pressable } from 'react-native';
-import { Recipe } from '@/types/recipe';
+import { useRecipeContext } from '@/context/RecipeContext';
 
 export default function RecipeScaler() {
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const { recipes, fetchRecipes } = useRecipeContext();
   const [selectedRecipe, setSelectedRecipe] = useState<string | undefined>(undefined);
   const [activeMode, setActiveMode] = useState<'portion' | 'availability'>('portion');
   const [scaleFactor, setScaleFactor] = useState(1);
@@ -20,22 +20,8 @@ export default function RecipeScaler() {
   };
 
   useEffect(() => {
-    const fetchRecipes = async () => {
-      setLoading(true);
-      try {
-        const response = await fetch('http://192.168.1.185:5000/api/recipes');
-        const data = await response.json();
-        console.log('Fetched Recipes:', JSON.stringify(data, null, 2));
-        setRecipes(data);
-      } catch (error) {
-        console.error('Error fetching recipes:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchRecipes();
-  }, []);
+  }, [fetchRecipes]);
 
   const scaleRecipe = async () => {
     if (!selectedRecipe) return alert('Please select a recipe.');

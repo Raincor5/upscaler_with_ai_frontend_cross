@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, Button, Alert, Image } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
+import { useRecipeContext } from '@/context/RecipeContext';
 
 export default function TabTwoScreen() {
+  const { fetchRecipes } = useRecipeContext(); // Access fetchRecipes from the global context
   const [photo, setPhoto] = useState<string | null>(null);
 
   const handleUploadFile = async () => {
@@ -69,7 +71,7 @@ export default function TabTwoScreen() {
       uri: photo,
       name: 'photo.jpg',
       type: 'image/jpeg',
-    }as any);
+    } as any);
 
     try {
       console.log('Uploading photo...');
@@ -86,6 +88,9 @@ export default function TabTwoScreen() {
       const data = await response.json();
       Alert.alert('Success', `Recipe processed: ${data.recipe.name}`);
       console.log('Server response:', data);
+
+      // Fetch the updated list of recipes after successful upload
+      await fetchRecipes();
     } catch (error) {
       console.error('Error during upload:', error);
       Alert.alert('Error', 'Failed to upload the image and process the recipe.');
