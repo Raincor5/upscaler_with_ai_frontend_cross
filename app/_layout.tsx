@@ -91,7 +91,7 @@ function RootLayoutNav() {
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Help - Recipe Scaler' }} />
         <Stack.Screen
           name="recipe-detail"
-          options={{ title: 'Recipe Details' }}
+          options={{ title: 'Recipe Details', presentation: "modal", headerShown: false }}
         />
       </Stack>
     </ThemeProvider>

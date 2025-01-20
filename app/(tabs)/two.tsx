@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Button, Alert, Image } from 'react-native';
+import { View, Text, StyleSheet, Alert, Image } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { useRecipeContext } from '@/context/RecipeContext';
+import { Pressable } from 'react-native';
+import apiEndpoints from "@/constants/apiConfig";
 
 export default function TabTwoScreen() {
   const { fetchRecipes } = useRecipeContext(); // Access fetchRecipes from the global context
@@ -75,8 +77,8 @@ export default function TabTwoScreen() {
 
     try {
       console.log('Uploading photo...');
-      const response = await fetch('https://6000-2a0a-ef40-254-8701-4c28-d852-59c8-f8b1.ngrok-free.app/api/process-image', {
-        method: 'POST',
+      const response = await fetch(apiEndpoints.processImage, {
+        method: "POST",
         body: formData,
       });
 
@@ -102,19 +104,21 @@ export default function TabTwoScreen() {
       <Text style={styles.title}>Upload Recipes</Text>
 
       <View style={styles.buttonContainer}>
-        <View style={styles.button}>
-          <Button title="Upload File" onPress={handleUploadFile} color="#007bff" />
-        </View>
-        <View style={styles.button}>
-          <Button title="Take a Picture" onPress={handleTakePicture} color="#28a745" />
-        </View>
+        <Pressable style={[styles.button, styles.uploadButton]} onPress={handleUploadFile}>
+          <Text style={styles.buttonText}>Upload File</Text>
+        </Pressable>
+        <Pressable style={[styles.button, styles.cameraButton]} onPress={handleTakePicture}>
+          <Text style={styles.buttonText}>Take a Picture</Text>
+        </Pressable>
       </View>
 
       {photo && (
         <View style={styles.previewContainer}>
           <Text style={styles.subtitle}>Preview:</Text>
           <Image source={{ uri: photo }} style={styles.preview} />
-          <Button title="Upload and Process" onPress={handleUpload} color="#ff5722" />
+          <Pressable style={[styles.button, styles.uploadAndProcessButton]} onPress={handleUpload}>
+            <Text style={styles.buttonText}>Upload and Process</Text>
+          </Pressable>
         </View>
       )}
     </View>
@@ -127,36 +131,65 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#121212',
+    padding: 20,
   },
   title: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: 'bold',
-    marginBottom: 30,
     color: '#ffffff',
+    marginBottom: 30,
   },
   subtitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 10,
     color: '#ffffff',
+    marginBottom: 10,
   },
   buttonContainer: {
-    flexDirection: 'column',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    height: 120,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+    width: '100%',
   },
   button: {
-    marginBottom: 20,
+    flex: 1,
+    paddingVertical: 15,
+    alignItems: 'center',
+    borderRadius: 8,
+    marginHorizontal: 10,
+  },
+  uploadButton: {
+    backgroundColor: '#4CAF50', // Green
+  },
+  cameraButton: {
+    backgroundColor: '#007bff', // Blue
+  },
+  uploadAndProcessButton: {
+    backgroundColor: '#ff5722', // Orange
+    marginTop: 20,
     width: 200,
   },
+  buttonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
   previewContainer: {
-    marginTop: 20,
     alignItems: 'center',
+    marginTop: 30,
+    padding: 20,
+    backgroundColor: '#1e1e1e',
+    borderRadius: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 5, // Shadow for Android
   },
   preview: {
     width: 200,
     height: 200,
-    marginBottom: 10,
+    marginBottom: 15,
+    borderRadius: 15,
   },
 });

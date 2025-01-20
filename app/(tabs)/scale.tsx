@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ScrollView, View, Text, TextInput, StyleSheet, ActivityIndicator, Pressable } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { useRecipeContext } from '@/context/RecipeContext';
+import apiEndpoints from "@/constants/apiConfig";
 
 export default function RecipeScaler() {
   const { recipes, fetchRecipes } = useRecipeContext();
@@ -45,9 +46,9 @@ export default function RecipeScaler() {
     console.log('Scaling API Payload:', JSON.stringify(payload, null, 2));
 
     try {
-      const response = await fetch('https://6000-2a0a-ef40-254-8701-4c28-d852-59c8-f8b1.ngrok-free.app/api/scale', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch(apiEndpoints.scale, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
@@ -168,8 +169,6 @@ export default function RecipeScaler() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Recipe Scaler</Text>
-
       <View style={styles.segmentedControl}>
         <Pressable
           style={[styles.segment, activeMode === 'portion' && styles.activeSegment]}

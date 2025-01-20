@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import apiEndpoints from "@/constants/apiConfig";
 
 export type Recipe = {
   _id: string;
@@ -16,16 +17,21 @@ type RecipeContextType = {
 
 const RecipeContext = createContext<RecipeContextType | undefined>(undefined);
 
-export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
 
   const fetchRecipes = async () => {
     try {
-      const response = await fetch('https://6000-2a0a-ef40-254-8701-4c28-d852-59c8-f8b1.ngrok-free.app/api/recipes');
+      const response = await fetch(apiEndpoints.recipes);
+      if (!response.ok) {
+        throw new Error("Failed to fetch recipes.");
+      }
       const data = await response.json();
       setRecipes(data);
     } catch (error) {
-      console.error('Error fetching recipes:', error);
+      console.error("Error fetching recipes:", error);
     }
   };
 
@@ -43,7 +49,7 @@ export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 export const useRecipeContext = () => {
   const context = useContext(RecipeContext);
   if (!context) {
-    throw new Error('useRecipeContext must be used within a RecipeProvider');
+    throw new Error("useRecipeContext must be used within a RecipeProvider");
   }
   return context;
 };

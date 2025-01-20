@@ -22,24 +22,18 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        // Disable the static render of the header on web
-        // to prevent a hydration error in React Navigation v6.
         headerShown: useClientOnlyValue(false, true),
-      }}>
+      }}
+    >
+      {/* Preview Recipes Tab */}
       <Tabs.Screen
-          name="index"
-          options={{
-            title: 'Preview Recipes',
-            tabBarIcon: ({ color }) => <TabBarIcon name="list" color={color} />,
-          }}
-      />
-      <Tabs.Screen
-        name="two"
+        name="index"
         options={{
-          title: 'Upload Recipes',
-          tabBarIcon: ({ color }) => <TabBarIcon name="upload" color={color} />,
+          title: 'Preview Recipes',
+          tabBarIcon: ({ color }) => <TabBarIcon name="list" color={color} />,
         }}
       />
+      {/* Scale Recipes Tab */}
       <Tabs.Screen
         name="scale"
         options={{
@@ -61,8 +55,14 @@ export default function TabLayout() {
           ),
         }}
       />
+      {/* Upload Recipes Tab */}
+      <Tabs.Screen
+        name="two"
+        options={{
+          title: 'Upload Recipes',
+          tabBarIcon: ({ color }) => <TabBarIcon name="upload" color={color} />,
+        }}
+      />
     </Tabs>
-      
-
-);
+  );
 }
