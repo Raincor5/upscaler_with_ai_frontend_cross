@@ -75,7 +75,7 @@ export default function TabTwoScreen() {
 
     try {
       console.log('Uploading photo...');
-      const response = await fetch('http://192.168.1.185:5000/api/process-image', {
+      const response = await fetch('https://6000-2a0a-ef40-254-8701-4c28-d852-59c8-f8b1.ngrok-free.app/api/process-image', {
         method: 'POST',
         body: formData,
       });

@@ -45,7 +45,7 @@ export default function RecipeScaler() {
     console.log('Scaling API Payload:', JSON.stringify(payload, null, 2));
 
     try {
-      const response = await fetch('http://192.168.1.185:5000/api/scale', {
+      const response = await fetch('https://6000-2a0a-ef40-254-8701-4c28-d852-59c8-f8b1.ngrok-free.app/api/scale', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -215,7 +215,101 @@ export default function RecipeScaler() {
 }
 
 const styles = StyleSheet.create({
-  // Existing styles
+  container: {
+    padding: 0,
+    margin: 0,
+    backgroundColor: '#121212',
+    flexGrow: 1,
+  },
+  title: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  segmentedControl: {
+    flexDirection: 'row',
+    width: '100%',
+    borderRadius: 10,
+    backgroundColor: '#1e1e1e',
+  },
+  segment: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 15,
+  },
+  activeSegment: {
+    backgroundColor: '#4CAF50',
+  },
+  segmentText: {
+    color: '#777',
+    fontWeight: 'bold',
+  },
+  activeSegmentText: {
+    color: '#ffffff',
+  },
+  pickerContainer: {
+    marginBottom: 20,
+  },
+  picker: {
+    backgroundColor: '#1e1e1e',
+    color: '#ffffff',
+    borderRadius: 5,
+  },
+  label: {
+    fontSize: 16,
+    color: '#ffffff',
+    marginBottom: 10,
+  },
+  inputContainer: {
+    marginBottom: 20,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#444',
+    backgroundColor: '#1e1e1e',
+    color: '#ffffff',
+    padding: 10,
+    borderRadius: 5,
+  },
+  unitContainer: {
+    marginBottom: 20,
+  },
+  unitScroll: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  unitButton: {
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#444',
+    borderRadius: 5,
+    backgroundColor: '#1e1e1e',
+  },
+  unitButtonActive: {
+    backgroundColor: '#4CAF50',
+  },
+  unitText: {
+    color: '#ffffff',
+    fontSize: 16,
+  },
+  unitTextActive: {
+    color: '#ffffff',
+    fontWeight: 'bold',
+  },
+  primaryButton: {
+    backgroundColor: '#4CAF50',
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderRadius: 5,
+    marginTop: 10,
+  },
+  buttonText: {
+    color: '#ffffff',
+    fontWeight: 'bold',
+  },
   resultContainer: {
     marginTop: 20,
     backgroundColor: '#1e1e1e',

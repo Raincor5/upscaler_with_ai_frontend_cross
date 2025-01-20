@@ -21,7 +21,7 @@ export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const fetchRecipes = async () => {
     try {
-      const response = await fetch('http://192.168.1.185:5000/api/recipes');
+      const response = await fetch('https://6000-2a0a-ef40-254-8701-4c28-d852-59c8-f8b1.ngrok-free.app/api/recipes');
       const data = await response.json();
       setRecipes(data);
     } catch (error) {
